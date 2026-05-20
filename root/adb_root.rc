@@ -2,6 +2,21 @@ service adb_root /system_ext/bin/adb_root
     class main
     user root
     group root
+    disabled
+
+on init && property:ro.debuggable=1
+    start adb_root
+
+on property:ro.debuggable=1
+    start adb_root
 
 on post-fs-data
-    mkdir /data/adbroot 0700 root root
+    # Keep parent directory private from listing, but allow path traversal.
+    mkdir /data/adbroot 0711 root root
+    chown root root /data/adbroot
+    chmod 0711 /data/adbroot
+    # TEE soft debug runtime payloads are written by system_app (LineageParts),
+    # and read by keystore2.
+    mkdir /data/adbroot/tee_soft_debug 0755 system system
+    chown system system /data/adbroot/tee_soft_debug
+    chmod 0755 /data/adbroot/tee_soft_debug
